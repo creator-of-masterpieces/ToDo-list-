@@ -1,27 +1,40 @@
 import "./styles/styles.css"
 
-// Импортирует список задач
+// Импорт списка задач
 import {todos} from "./utils/constants"
 
-// HTML список дел
-const contentElement = document.querySelector(".todos__list");
+// Импорт классов
+import {Item} from "./components/Item";
+import {Form} from "./components/form";
 
-// HTML шаблон
+
+// Элемент шаблона
 const template = document.querySelector("#todo-item-template") as HTMLTemplateElement;
 
-// Принимает строку, клонирует шаблон элемента списка,
-// записывает в заголовок списка переданную строку,
-// возвращает заполненный элемент списка
-function createElement(item: string) {
-    const itemElement = template.content.querySelector(".todo-item").cloneNode(true) as HTMLElement;
-    const title = itemElement.querySelector(".todo-item__text");
-    title.textContent = item;
-    return itemElement;
+// Элемент список дел
+const contentElement = document.querySelector(".todos__list");
+
+// Элемент формы
+const formElement = document.querySelector('.todos__form') as HTMLFormElement;
+
+// Экземпляр формы
+const todoForm = new Form(formElement, handleSubmitForm);
+
+// Обработчик оправки формы
+function handleSubmitForm(data: string) {
+    const todoItem = new Item(template);
+    const itemElement = todoItem.render(data);
+    contentElement.prepend(itemElement);
+    todoForm.clearValue();
 }
 
-// Перебирает массив с названиями дел, и вставляет названия в элементы списка, добавляет их в список на страницу
+// Перебирает массив с названиями дел.
+// Создает объект - элемент списка.
+// Вызывает метод, который устанавливает название как заголовок элемента и возвращает HTML элемент.
+// Добавляет HTML элемент на страницу
 todos.forEach(item => {
-    const itemElement = createElement(item);
+    const todoItem = new Item(template);
+    const itemElement = todoItem.render(item);
     contentElement.prepend(itemElement);
 })
 
