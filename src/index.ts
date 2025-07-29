@@ -20,10 +20,14 @@ const formElement = document.querySelector('.todos__form') as HTMLFormElement;
 // Экземпляр формы
 const todoForm = new Form(formElement, handleSubmitForm);
 
-// Обработчик оправки формы
+// Обработчик оправки формы.
+// Принимает строку из поля формы.
+// Создает экземпляр элемента списка.
+// Создает и добавляет на страницу html элемент списка.
+// Очищает поля формы
 function handleSubmitForm(data: string) {
     const todoItem = new Item(template);
-    const itemElement = todoItem.render(data);
+    const itemElement = todoItem.render({id: '69', name: data});
     contentElement.prepend(itemElement);
     todoForm.clearValue();
 }

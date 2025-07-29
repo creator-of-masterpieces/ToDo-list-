@@ -1,4 +1,6 @@
 // Класс для создания элемента списка
+import {IItem} from "../types";
+
 export class Item {
     // Элемент списка дел
     protected itemElement: HTMLElement;
@@ -16,8 +18,8 @@ export class Item {
     // Принимает строку.
     // Устанавливает строку как заголовок элемента.
     // Возвращает элемент
-    render(item: string): HTMLElement {
-        this.title.textContent = item;
+    render(item: IItem): HTMLElement {
+        this.title.textContent = item.name;
         return this.itemElement;
     }
 }
