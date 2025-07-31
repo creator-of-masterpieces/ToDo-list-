@@ -6,6 +6,7 @@ import {todos} from "./utils/constants"
 // Импорт классов
 import {Item} from "./components/Item";
 import {Form} from "./components/form";
+import {ToDoModel} from "./components/ToDoModel";
 
 
 // Элемент шаблона
@@ -41,4 +42,13 @@ todos.forEach(item => {
     const itemElement = todoItem.render(item);
     contentElement.prepend(itemElement);
 })
+
+// Тестирование класса  ToDoModel.
+const toDoArray = new ToDoModel();
+toDoArray.items = todos;
+console.log(toDoArray.items.map(item => item));
+console.log(toDoArray.addItem('Поролять'));
+console.log(toDoArray.items);
+toDoArray.removeItem('2');
+console.log(toDoArray.items);
 
