@@ -1,61 +1,62 @@
 import "./styles/styles.css"
 
-// Импорт списка задач
+// Импорт начального списка задач
 import {todos} from "./utils/constants"
 
-// Импорт классов
+// Импорт классов компонентов приложения
 import {Item} from "./components/Item";
 import {Form} from "./components/Form";
 import {ToDoModel} from "./components/ToDoModel";
 import {Page} from "./components/Page";
 
-// Контейнер для содержимого страницы
-const contentElement = document.querySelector('.contentElement') as HTMLElement;
+// Находим контейнер, в который будем отрисовывать форму и список дел
+const contentElement = document.querySelector('.content') as HTMLElement;
 
-// Шаблон элемента списка дел
+// Получаем шаблон элемента списка задач
 const itemTemplate = document.querySelector('#todo-item-template') as HTMLTemplateElement;
 
-// Шаблон формы
+// Получаем шаблон формы добавления задачи
 const formTemplate = document.querySelector('#todo-form-template') as HTMLTemplateElement;
 
-// Элемент формы
-const formElement = document.querySelector('.todos__form') as HTMLFormElement;
-
-// Экземпляр страницы
+// Создаём экземпляр класса Page, который управляет структурой страницы
 const page = new Page(contentElement);
 
-// Массив с элементами списка дел
+// Создаём экземпляр модели Tоdo — будет хранить и управлять данными задач
 const todoArray = new ToDoModel();
 
-// Записывает в массив начальный массив элементов списка дел
+// Инициализируем модель начальными задачами, импортированными из constants.ts
 todoArray.items = todos;
 
-// Экземпляр формы
+// Создаём экземпляр формы для добавления новых задач
 const todoForm = new Form(formTemplate);
 
-// Устанавливает обработчик отправки формы
+// Устанавливаем обработчик события отправки формы
 todoForm.setHandler(handleSubmitForm);
 
-// Добавляет элемент формы на страницу
+// Добавляем сгенерированный элемент формы на страницу
 page.formContainer = todoForm.render();
 
-// Обработчик оправки формы.
-// Принимает строку из поля формы.
-// Создает экземпляр элемента списка.
-// Создает и добавляет на страницу html элемент списка.
-// Очищает поля формы
+/**
+ * Обработчик оправки формы
+ * @param data - строка, введённая пользователем
+/* Добавляет новую задачу в список,
+ * очищает поле ввода
+ * и заново отрисовывает все задачи
+ */
 function handleSubmitForm(data: string) {
     todoArray.addItem(data);
     todoForm.clearValue();
     renderTodoItems();
 }
 
-// Перебирает массив с названиями дел, который получил из хранилища элементов списка дел.
-// Создает объект - элемент списка.
-// Вызывает метод, который устанавливает название как заголовок элемента и возвращает HTML элемент.
-// Возвращает созданный элемент.
-// Добавляет элемент на страницу с помощью метода объекта page.
-
+/**
+ * Отрисовка всех задач
+ *
+ * Перебирает массив задач из todoArray,
+ * для каждой создаёт объект Item,
+ * генерирует для него HTML-элемент с текстом задачи,
+ * возвращает массив этих элементов и отображает их на странице в обратном порядке (последние сверху)
+*/
 function renderTodoItems() {
     page.todoContainer = todoArray.items.map(item => {
         const todoItem = new Item(itemTemplate);
@@ -64,5 +65,6 @@ function renderTodoItems() {
     }).reverse()
 }
 
+// Первичная отрисовка задач при загрузке страницы
 renderTodoItems();
 
