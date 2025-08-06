@@ -1,7 +1,21 @@
 // Класс для создания и управления элементом списка задач
 import {IItem} from "../types";
 
-export class Item {
+// Интерфейс для элемента списка задач.
+// Определяет свойства и метод render, который возвращает HTML-элемент задачи
+export interface IViewItem {
+    id: string;
+    name: string;
+    render(item: IItem): HTMLElement;
+}
+
+// Интерфейс конструктора элемента списка задач.
+// Указывает, что класс должен принимать HTML-шаблон и возвращать объект IViewItem
+export interface IViewitemConstructor {
+    new(template: HTMLTemplateElement): IViewItem;
+}
+
+export class Item implements IViewItem {
     // DOM-элемент задачи (обёртка)
     protected itemElement: HTMLElement;
 
