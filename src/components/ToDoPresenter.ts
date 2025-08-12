@@ -36,7 +36,7 @@ export class ItemPresenter {
         // Устанавливает обработчик события отправки для формы
         this.todoForm.setHandler(this.handleSubmitForm.bind(this));
         // Создает разметку формы и сохраняет её в контейнер страницы
-        this.viewPageContainer.formContainer = this.todoEditForm.render();
+        this.viewPageContainer.formContainer = this.todoForm.render();
     }
 
     // Обработчик события отправки формы.

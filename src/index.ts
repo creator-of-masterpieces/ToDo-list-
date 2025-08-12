@@ -22,7 +22,17 @@ const todoArray = new ToDoModel();
 // Инициализируем модель начальными задачами, импортированными из constants.ts
 todoArray.items = todos;
 
+// Экземпляр презентора.
+// Принимает в качестве параметров:
+// Модель с данными;
+// Класс Form;
+// itemContainer - сама страничка, в которой размещаются форма и карточки;
+// Класс Item;
+
 const itemPresentor = new ItemPresenter(todoArray, Form, itemContainer, Item);
 
+// Метод создает форму, разметка формы, устанавливает слушатель на кнопку отправки формы
 itemPresentor.init();
+
+// Генерирует разметку страницы
 itemPresentor.renderView();
