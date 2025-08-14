@@ -2,11 +2,14 @@
 import {IItem} from "../types";
 
 // Интерфейс для элемента списка задач.
-// Определяет свойства и метод render, который возвращает HTML-элемент задачи
+// Определяет свойства и методы:
+//      - render - возвращает HTML-элемент задачи;
+//      - setCopyHandler - принимает и устанавливает функцию обработчик клика по кнопки копирования
 export interface IViewItem {
     id: string;
     name: string;
     render(item: IItem): HTMLElement;
+    setCopyHandler(handleCopyItem: Function): void;
 }
 
 // Интерфейс конструктора элемента списка задач.
@@ -18,24 +21,28 @@ export interface IViewitemConstructor {
 export class Item implements IViewItem {
     // DOM-элемент задачи (обёртка)
     protected itemElement: HTMLElement;
-
     // DOM-элемент с текстом задачи
     protected title: HTMLElement;
-
     // id задачи
     protected _id: string;
+    // Кнопка копирования элемента
+    protected copyButton: HTMLButtonElement;
+    // Функция-обработчик клика по кнопке копирования элемента
+    protected handleCopyItem: Function;
 
     /**
      * Конструктор класса Item
      * @param template - HTML-шаблон элемента списка задач
      *
      * Клонирует шаблон элемента списка и сохраняет ссылки на его части:
-     * - `.todo-item` — корневой элемент задачи
-     * - `.todo-item__text` — элемент с заголовком задачи
+     * - itemElement — корневой элемент задачи
+     * - title — элемент с заголовком задачи
+     * - copyButton - кнопка копирования задачи
      */
     constructor(template: HTMLTemplateElement) {
         this.itemElement = template.content.querySelector(".todo-item").cloneNode(true) as HTMLElement;
         this.title = this.itemElement.querySelector(".todo-item__text");
+        this.copyButton = this.itemElement.querySelector('.todo-item__copy');
     }
 
     // Устанавливает id элемента задачи
@@ -56,6 +63,23 @@ export class Item implements IViewItem {
     // Возвращает текст задачи, либо пустую строку, если текст не установлен
     get name(): string {
         return this.title.textContent || '';
+    }
+
+    /**
+     * Устанавливает обработчик клика по кнопке копирования задачи
+     * @param handleCopyItem — функция-обработчик, которая будет вызываться при нажатии на кнопку копирования
+     *
+     * 1. Сохраняет переданную функцию в свойство `handleCopyItem`.
+     *    Это позволяет вызывать её позже в момент клика по кнопке.
+     * 2. Добавляет обработчик события `click` на кнопку копирования `copyButton`.
+     *    При клике вызывается сохранённая функция и в неё передаётся текущий экземпляр задачи (`this`).
+     *    Таким образом, обработчик получает доступ ко всем данным и методам этого элемента.
+     */
+    setCopyHandler(handleCopyItem: Function) {
+        this.handleCopyItem = handleCopyItem;
+        this.copyButton.addEventListener('click', (evt)=> {
+            this.handleCopyItem(this)
+        })
     }
 
     /**
