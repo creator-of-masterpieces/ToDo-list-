@@ -4,12 +4,14 @@ import {IItem} from "../types";
 // Интерфейс для элемента списка задач.
 // Определяет свойства и методы:
 //      - render - возвращает HTML-элемент задачи;
-//      - setCopyHandler - принимает и устанавливает функцию обработчик клика по кнопки копирования
+//      - setCopyHandler - принимает и устанавливает функцию обработчик клика по кнопке копирования
+//      - setDeleteHandler - принимает и устанавливает функцию обработчик клика по кнопке удаления
 export interface IViewItem {
     id: string;
     name: string;
     render(item: IItem): HTMLElement;
     setCopyHandler(handleCopyItem: Function): void;
+    setDeleteHandler(handleDeleteitem: Function): void;
 }
 
 // Интерфейс конструктора элемента списка задач.
@@ -27,8 +29,12 @@ export class Item implements IViewItem {
     protected _id: string;
     // Кнопка копирования элемента
     protected copyButton: HTMLButtonElement;
+    // Кнопка удаления элемента
+    protected deleteButton: HTMLButtonElement;
     // Функция-обработчик клика по кнопке копирования элемента
     protected handleCopyItem: Function;
+    // Функция-обработчик клика по кнопке удаления элемента
+    protected handleDeleteitem: Function;
 
     /**
      * Конструктор класса Item
@@ -38,11 +44,13 @@ export class Item implements IViewItem {
      * - itemElement — корневой элемент задачи
      * - title — элемент с заголовком задачи
      * - copyButton - кнопка копирования задачи
+     * - deleteButton - кнопка удаления задачи
      */
     constructor(template: HTMLTemplateElement) {
         this.itemElement = template.content.querySelector(".todo-item").cloneNode(true) as HTMLElement;
         this.title = this.itemElement.querySelector(".todo-item__text");
         this.copyButton = this.itemElement.querySelector('.todo-item__copy');
+        this.deleteButton = this.itemElement.querySelector('.todo-item__del');
     }
 
     // Устанавливает id элемента задачи
@@ -79,6 +87,26 @@ export class Item implements IViewItem {
         this.handleCopyItem = handleCopyItem;
         this.copyButton.addEventListener('click', (evt)=> {
             this.handleCopyItem(this)
+        })
+    }
+
+    /**
+     * Устанавливает обработчик клика по кнопке удаления задачи
+     * @param handleDeleteItem — функция-обработчик, которая будет вызываться при нажатии на кнопку удаления
+     *
+     * 1. Сохраняет переданную функцию в свойство `handleDeleteitem`,
+     *    чтобы её можно было вызвать при нажатии на кнопку.
+     * 2. Добавляет обработчик события `click` на кнопку удаления `deleteButton`.
+     * 3. При клике вызывается сохранённая функция и в неё передаётся текущий экземпляр задачи (`this`),
+     *    что позволяет обработчику получить доступ к её данным (`id`, `name`) и DOM-элементу.
+     *
+     * Этот метод связывает конкретную задачу с логикой удаления,
+     * которую определяет презентер или контроллер.
+     */
+    setDeleteHandler(handleDeleteItem: Function) {
+        this.handleDeleteitem = handleDeleteItem;
+        this.deleteButton.addEventListener('click', (evt) => {
+            this.handleDeleteitem(this);
         })
     }
 
