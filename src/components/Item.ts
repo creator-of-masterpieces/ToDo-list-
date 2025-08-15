@@ -3,15 +3,17 @@ import {IItem} from "../types";
 
 // Интерфейс для элемента списка задач.
 // Определяет свойства и методы:
-//      - render - возвращает HTML-элемент задачи;
-//      - setCopyHandler - принимает и устанавливает функцию обработчик клика по кнопке копирования
-//      - setDeleteHandler - принимает и устанавливает функцию обработчик клика по кнопке удаления
+//      - render - возвращает HTML-элемент задачи.
+//      - setCopyHandler - принимает и устанавливает функцию обработчик клика по кнопке копирования.
+//      - setDeleteHandler - принимает и устанавливает функцию обработчик клика по кнопке удаления.
+//      - setEditHandler - принимает и устанавливает функцию обработчик клика по кнопке редактирования.
 export interface IViewItem {
     id: string;
     name: string;
     render(item: IItem): HTMLElement;
     setCopyHandler(handleCopyItem: Function): void;
-    setDeleteHandler(handleDeleteitem: Function): void;
+    setDeleteHandler(handleDeleteItem: Function): void;
+    setEditHandler(handleEditItem: Function): void;
 }
 
 // Интерфейс конструктора элемента списка задач.
@@ -31,10 +33,15 @@ export class Item implements IViewItem {
     protected copyButton: HTMLButtonElement;
     // Кнопка удаления элемента
     protected deleteButton: HTMLButtonElement;
+    // Кнопка редактирования элемента
+    protected editButton: HTMLButtonElement;
     // Функция-обработчик клика по кнопке копирования элемента
     protected handleCopyItem: Function;
     // Функция-обработчик клика по кнопке удаления элемента
-    protected handleDeleteitem: Function;
+    protected handleDeleteItem: Function;
+    // Функция-обработчик клика по кнопке редактирования элемента
+    protected handleEditItem: Function;
+
 
     /**
      * Конструктор класса Item
@@ -51,6 +58,7 @@ export class Item implements IViewItem {
         this.title = this.itemElement.querySelector(".todo-item__text");
         this.copyButton = this.itemElement.querySelector('.todo-item__copy');
         this.deleteButton = this.itemElement.querySelector('.todo-item__del');
+        this.editButton = this.itemElement.querySelector('.todo-item__edit');
     }
 
     // Устанавливает id элемента задачи
@@ -104,9 +112,29 @@ export class Item implements IViewItem {
      * которую определяет презентер или контроллер.
      */
     setDeleteHandler(handleDeleteItem: Function) {
-        this.handleDeleteitem = handleDeleteItem;
+        this.handleDeleteItem = handleDeleteItem;
         this.deleteButton.addEventListener('click', (evt) => {
-            this.handleDeleteitem(this);
+            this.handleDeleteItem(this);
+        })
+    }
+
+    /**
+     * Устанавливает обработчик клика по кнопке редактирования задачи
+     * @param handleEditItem — функция-обработчик, которая будет вызываться при нажатии на кнопку редактирования
+     *
+     * 1. Сохраняет переданную функцию в свойство `handleEditItem`,
+     *    чтобы её можно было вызвать в момент клика.
+     * 2. Добавляет обработчик события `click` на кнопку редактирования `editButton`.
+     * 3. При клике вызывается сохранённая функция и в неё передаётся текущий экземпляр задачи (`this`),
+     *    что позволяет обработчику получить доступ к данным задачи (`id`, `name`) и её DOM-элементу.
+     *
+     * Этот метод связывает конкретную задачу с логикой редактирования,
+     * которую определяет презентер или контроллер.
+     */
+    setEditHandler(handleEditItem: Function) {
+        this.handleEditItem = handleEditItem;
+        this.editButton.addEventListener('click', (evt) => {
+            this.handleEditItem(this);
         })
     }
 

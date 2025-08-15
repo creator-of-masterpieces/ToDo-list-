@@ -2,6 +2,7 @@ import {IForm, IFormConstructor} from "./Form";
 import {IToDoModel} from "../types";
 import {IPage} from "./Page";
 import {IViewItem, IViewitemConstructor} from "./Item";
+import {IPopup} from "./Popup";
 
 // Класс-презентер отвечает за взаимодействие модели данных и визуального интерфейса.
 // Он координирует логику: создает формы, обрабатывает события и обновляет отображение.
@@ -12,7 +13,7 @@ export class ItemPresenter {
     protected formTemplate: HTMLTemplateElement;
     // Экземпляр формы добавления задачи
     protected todoForm: IForm;
-    // Экземпляр формы редактирования задачи (в текущей реализации не используется)
+    // Экземпляр формы редактирования задачи
     protected todoEditForm: IForm;
 
     constructor(
@@ -24,47 +25,86 @@ export class ItemPresenter {
         protected viewPageContainer: IPage,
         // Интерфейс конструктора элемента списка дел
         protected viewItemConstructor: IViewitemConstructor,
+        // Интерфейс модального окна
+        protected modal: IPopup,
     ) {
         // Получаем шаблон элемента списка задач из разметки
         this.itemTemplate = document.querySelector('#todo-item-template') as HTMLTemplateElement;
         // Получаем шаблон формы добавления задачи из разметки
         this.formTemplate = document.querySelector('#todo-form-template') as HTMLTemplateElement;
     }
+
+    /**
+     * Инициализирует формы и размещает форму добавления на странице
+     *
+     * 1) Создаёт экземпляр формы добавления дела (`todoForm`), задаёт:
+     *    - обработчик отправки (`handleSubmitForm`),
+     *    - текст кнопки ("Добавить"),
+     *    - плейсхолдер поля ("Следующее дело"),
+     *    - и рендерит её в контейнер страницы (`viewPageContainer.formContainer`).
+     * 2) Создаёт экземпляр формы редактирования дела (`todoEditForm`), задаёт:
+     *    - текст кнопки ("Изменить"),
+     *    - плейсхолдер ("Новое название").
+     *    Форма редактирования не рендерится сразу, она показывается в модальном окне при редактировании.
+     */
     init() {
-        // Создает экземпляр формы
         this.todoForm = new this.formConstructor(this.formTemplate);
-        // Устанавливает обработчик события отправки для формы
         this.todoForm.setHandler(this.handleSubmitForm.bind(this));
-        // Создает разметку формы и сохраняет её в контейнер страницы
+        this.todoForm.buttonText = 'Добавить';
+        this.todoForm.placeholder = 'Следующее дело';
         this.viewPageContainer.formContainer = this.todoForm.render();
+
+        this.todoEditForm = new this.formConstructor(this.formTemplate);
+        this.todoEditForm.buttonText = 'Изменить';
+        this.todoEditForm.placeholder = 'Новое название';
     }
 
-    // Обработчик события отправки формы.
-    // Принимает название дела (строку)
+    /**
+     * Обрабатывает отправку формы редактирования задачи
+     * @param data — новое название задачи
+     * @param id — идентификатор редактируемой задачи
+     *
+     * 1) Обновляет элемент в модели через `this.model.editItem(id, data)`.
+     * 2) Перерисовывает список задач вызовом `renderView()`.
+     * 3) Очищает поле формы редактирования (`todoEditForm.clearValue()`),
+     * 4) Закрывает модальное окно (`modal.close()`).
+     *
+     * Вызывается обработчиком формы, установленным динамически в момент открытия модального окна.
+     */
     handleSubmitForm(data: string) {
-        // Создает объект нового дела, добавляет его в массив дел
         this.model.addItem(data);
-        // Перерисовывает интерфейс (обновляет список задач)
         this.renderView();
-        // Очищает поля формы после добавления задачи
         this.todoForm.clearValue();
     }
 
     /**
+     * Обрабатывает отправку формы редактирования задачи
+     * @param data — новое название задачи (строка)
+     * @param id — идентификатор редактируемой задачи
+     *
+     * 1. Вызывает метод `editItem` модели (`this.model`), передавая в него `id` и новое название.
+     *    Это обновляет соответствующий объект в массиве `_items`.
+     * 2. Вызывает `renderView()`, чтобы перерисовать список задач и отобразить изменения в интерфейсе.
+     * 3. Очищает поле формы редактирования, вызывая `clearValue()` у `todoEditForm`.
+     * 4. Закрывает модальное окно с формой редактирования, вызывая `close()` у объекта `modal`.
+     *
+     * Метод используется при подтверждении изменений названия задачи
+     * в модальном окне редактирования.
+     */
+    handleSubmitEditForm(data: string, id: string) {
+        this.model.editItem(id, data);
+        this.renderView();
+        this.todoEditForm.clearValue();
+        this.modal.close();
+    }
+
+    /**
      * Обрабатывает копирование задачи
-     * @param item — экземпляр визуального элемента задачи (IViewItem),
-     *               у которого была нажата кнопка копирования
+     * @param item — визуальный элемент задачи (IViewItem), по которому кликнули "Копировать"
      *
-     * 1. Получает полные данные задачи из модели по её id с помощью метода `getItem`.
-     *    Это позволяет скопировать не только текст, но и сохранить корректную структуру данных.
-     * 2. Добавляет в модель новую задачу с тем же названием (`name`), что и у исходной.
-     *    Новый объект получает уникальный id, который генерируется в `addItem`.
-     * 3. Вызывает `renderView()` для перерисовки списка дел, чтобы новый элемент сразу
-     *    отобразился на странице.
-     *
-     * Этот метод используется в связке с `setCopyHandler` из класса Item:
-     * при клике по кнопке копирования он получает текущий элемент, дублирует его в модели
-     * и обновляет интерфейс.
+     * 1) Берёт данные исходной задачи (`model.getItem(item.id)`).
+     * 2) Создаёт новую задачу с тем же названием (`model.addItem(...)`), id генерируется автоматически.
+     * 3) Перерисовывает список (`renderView()`), чтобы показать дубликат.
      */
     handleCopyItem(item: IViewItem) {
         const copyeditem = this.model.getItem(item.id);
@@ -74,17 +114,12 @@ export class ItemPresenter {
 
     /**
      * Обрабатывает удаление задачи
-     * @param item — экземпляр визуального элемента задачи (IViewItem),
-     *               у которого была нажата кнопка удаления
+     * @param item — визуальный элемент задачи (IViewItem), по которому кликнули "Удалить"
      *
-     * 1. Вызывает метод `removeItem` модели (`this.model`), передавая в него `id` задачи.
-     *    Это удаляет соответствующий объект из внутреннего массива `_items`.
-     * 2. Вызывает `renderView()` для перерисовки списка задач,
-     *    чтобы изменения в модели отразились в пользовательском интерфейсе.
+     * 1) Удаляет задачу из модели по `id` (`model.removeItem(item.id)`).
+     * 2) Перерисовывает список (`renderView()`), чтобы отразить изменения.
      *
-     * Этот метод используется в связке с `setDeleteHandler` из класса `Item`:
-     * при клике по кнопке удаления он получает текущий элемент,
-     * удаляет его из модели и обновляет отображение страницы.
+     * Используется совместно с `setDeleteHandler` у элемента задачи.
      */
     handleDeleteItem(item: IViewItem) {
         this.model.removeItem(item.id);
@@ -92,29 +127,51 @@ export class ItemPresenter {
     }
 
     /**
+     * Открывает модальное окно редактирования для выбранной задачи
+     * @param item — визуальный элемент задачи (IViewItem), по которому кликнули "Редактировать"
+     *
+     * 1) Получает актуальные данные задачи из модели (`getItem(item.id)`).
+     * 2) Заполняет форму редактирования текущим названием (`todoEditForm.setValue(...)`),
+     *    чтобы пользователь редактировал существующее значение.
+     * 3) Рендерит форму в модальное окно (`modal.content = todoEditForm.render()`).
+     * 4) Устанавливает обработчик сабмита формы редактирования:
+     *    при отправке вызовет `handleSubmitEditForm(newTitle, item.id)`.
+     * 5) Открывает модальное окно (`modal.open()`).
+     *
+     * Связка: setEditHandler → hendleEditItem → handleSubmitEditForm.
+     */
+    handleEditItem(item: IViewItem) {
+        const editItem = this.model.getItem(item.id);
+        this.todoEditForm.setValue(editItem.name);
+        this.modal.content = this.todoEditForm.render();
+        this.todoEditForm.setHandler((data: string) => this.handleSubmitEditForm(data, item.id));
+        this.modal.open();
+    }
+
+    /**
      * Отрисовывает актуальный список задач на странице
      *
-     * 1. Получает массив задач из модели (`this.model.items`).
-     * 2. Для каждой задачи:
-     *    - Создаёт экземпляр визуального элемента (`IViewItem`) с использованием HTML-шаблона `itemTemplate`.
-     *    - Устанавливает обработчик копирования (`setCopyHandler`), чтобы задача могла быть продублирована
-     *      при клике на кнопку копирования.
-     *    - Устанавливает обработчик удаления (`setDeleteHandler`), чтобы задача могла быть удалена
-     *      при клике на кнопку удаления.
-     *    - Вызывает метод `render(item)`, который создаёт DOM-элемент с заполненными данными (`id`, `name`).
-     *    - Возвращает готовый DOM-элемент.
-     * 3. Применяет `.reverse()`, чтобы новые задачи отображались в верхней части списка.
-     * 4. Передаёт полученный массив DOM-элементов в контейнер представления (`this.viewPageContainer.todoContainer`),
-     *    заменяя текущее содержимое списка на актуальное.
+     * 1) Берёт массив задач из модели (`this.model.items`).
+     * 2) Для каждой задачи:
+     *    - создаёт визуальный элемент (`IViewItem`) по шаблону `itemTemplate`,
+     *    - навешивает обработчики:
+     *        • копирования (`setCopyHandler(this.handleCopyItem.bind(this))`),
+     *        • удаления   (`setDeleteHandler(this.handleDeleteItem.bind(this))`),
+     *        • редактирования (`setEditHandler(this.hendleEditItem.bind(this))`),
+     *    - рендерит DOM-узел (`render(item)`) и возвращает его.
+     * 3) Инвертирует порядок элементов `.reverse()`, чтобы новые задачи были сверху.
+     * 4) Передаёт массив DOM-элементов представлению (`viewPageContainer.todoContainer`),
+     *    тем самым обновляя список на странице.
      *
-     * Метод вызывается после добавления, копирования или удаления задач, чтобы синхронизировать
-     * интерфейс с актуальным состоянием данных в модели.
+     * Вызывается после добавления, редактирования, копирования и удаления,
+     * чтобы синхронизировать UI с состоянием модели.
      */
     renderView() {
         const itemList = this.model.items.map((item)=> {
             const todoItem = new this.viewItemConstructor(this.itemTemplate);
             todoItem.setCopyHandler(this.handleCopyItem.bind(this));
             todoItem.setDeleteHandler(this.handleDeleteItem.bind(this));
+            todoItem.setEditHandler(this.handleEditItem.bind(this));
             const itemElement = todoItem.render(item);
             return itemElement;
         }).reverse();
