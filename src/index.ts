@@ -9,30 +9,41 @@ import {Form} from "./components/Form";
 import {ToDoModel} from "./components/ToDoModel";
 import {Page} from "./components/Page";
 import {ItemPresenter} from "./components/ToDoPresenter";
+import {Popup} from "./components/Popup";
 
-// Находим контейнер, в который будем отрисовывать форму и список дел
+// Находим контейнер, в который будут отрисованы форма и список дел
 const contentElement = document.querySelector('.content') as HTMLElement;
 
-// Создаём экземпляр класса Page, который управляет структурой страницы
+// Находим контейнер модального окна (попапа)
+const popupElement = document.querySelector('.popup') as HTMLElement;
+
+// Создаём экземпляр класса Page, который управляет структурой страницы:
+// хранит контейнер для формы и список задач.
 const itemContainer = new Page(contentElement);
 
-// Создаём экземпляр модели Tоdo — будет хранить и управлять данными задач
+// Создаём экземпляр модели ToDoModel — объект для хранения и управления данными задач.
+// Модель реализует операции добавления, удаления, редактирования и получения задач.
 const todoArray = new ToDoModel();
 
 // Инициализируем модель начальными задачами, импортированными из constants.ts
 todoArray.items = todos;
 
-// Экземпляр презентора.
-// Принимает в качестве параметров:
-// Модель с данными;
-// Класс Form;
-// itemContainer - сама страничка, в которой размещаются форма и карточки;
-// Класс Item;
+// Создаём экземпляр попапа (модального окна), который используется для редактирования задачи
+const modal = new Popup(popupElement);
 
-const itemPresentor = new ItemPresenter(todoArray, Form, itemContainer, Item);
+// Создаём экземпляр презентера (ItemPresenter).
+// Презентер координирует взаимодействие между:
+// - моделью данных (todoArray);
+// - формами (Form);
+// - представлением страницы (itemContainer);
+// - элементами списка задач (Item);
+// - модальным окном (modal).
+const itemPresentor = new ItemPresenter(todoArray, Form, itemContainer, Item, modal);
 
-// Метод создает форму, разметка формы, устанавливает слушатель на кнопку отправки формы
+// Инициализация приложения:
+// создаёт форму добавления задачи, задаёт обработчики событий и вставляет форму на страницу.
 itemPresentor.init();
 
-// Генерирует разметку страницы
+// Первая отрисовка интерфейса:
+// формирует DOM-элементы для всех задач из модели и отображает их на странице.
 itemPresentor.renderView();

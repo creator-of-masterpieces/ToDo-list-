@@ -47,7 +47,7 @@ export class Popup implements IPopup {
      * Перед вставкой старое содержимое полностью удаляется (`replaceChildren`).
      */
     set content (value: HTMLElement) {
-        this.content.replaceChildren(value);
+        this._content.replaceChildren(value);
     }
 
     /**
