@@ -1,13 +1,22 @@
-// Класс для создания и управления элементом списка задач
+/**
+ * Компонент `Item` — отвечает за отображение и управление отдельной задачей.
+ * Слой: View.
+ *
+ * Взаимодействие:
+ * - получает данные задачи (id и name) и отображает их в DOM;
+ * - пробрасывает события наружу при клике по кнопкам (copy, delete, edit);
+ * - не содержит бизнес-логики; — только UI и эмит событий.
+ */
 import {IItem} from "../types";
 import {EventEmitter, IEvents} from "./EventEmitter";
 
-// Интерфейс для элемента списка задач.
-// Определяет свойства и методы:
-//      - render - возвращает HTML-элемент задачи.
-//      - setCopyHandler - принимает и устанавливает функцию обработчик клика по кнопке копирования.
-//      - setDeleteHandler - принимает и устанавливает функцию обработчик клика по кнопке удаления.
-//      - setEditHandler - принимает и устанавливает функцию обработчик клика по кнопке редактирования.
+/**
+ * Интерфейс для элемента списка задач.
+ * Определяет:
+ * - `id` (getter/setter); — уникальный идентификатор задачи;
+ * - `name` (getter/setter); — текстовое название задачи;
+ * - `render(item: IItem)`; — возвращает готовый DOM-элемент.
+ */
 export interface IViewItem extends IEvents {
     id: string;
     name: string;
@@ -20,6 +29,14 @@ export interface IViewItemConstructor {
     new(template: HTMLTemplateElement): IViewItem;
 }
 
+/**
+ * Класс `Item` — реализация IViewItem.
+ * Отвечает за:
+ * - клонирование шаблона задачи;
+ * - отображение текста и хранение id;
+ * - навешивание слушателей на кнопки действий;
+ * - генерацию событий copy/delete/edit.
+ */
 export class Item extends EventEmitter implements IViewItem {
     // DOM-элемент задачи (обёртка)
     protected itemElement: HTMLElement;
@@ -35,14 +52,12 @@ export class Item extends EventEmitter implements IViewItem {
     protected editButton: HTMLButtonElement;
 
     /**
-     * Конструктор класса Item
-     * @param template - HTML-шаблон элемента списка задач
+     * @param template HTML-шаблон задачи (будет клонирован)
      *
-     * Клонирует шаблон элемента списка и сохраняет ссылки на его части:
-     * - itemElement — корневой элемент задачи
-     * - title — элемент с заголовком задачи
-     * - copyButton - кнопка копирования задачи
-     * - deleteButton - кнопка удаления задачи
+     * Конструктор:
+     * - клонирует шаблон;
+     * - сохраняет ссылки на элементы (текст, кнопки);
+     * - вешает обработчики кликов, эмитящие события наружу.
      */
     constructor(template: HTMLTemplateElement) {
         super();
@@ -52,6 +67,7 @@ export class Item extends EventEmitter implements IViewItem {
         this.deleteButton = this.itemElement.querySelector('.todo-item__del');
         this.editButton = this.itemElement.querySelector('.todo-item__edit');
 
+        // Проброс событий наружу через EventEmitter
         this.copyButton.addEventListener('click', () => this.emit('copy', {id: this._id}));
         this.deleteButton.addEventListener('click', () => this.emit('delete', {id: this._id}));
         this.editButton.addEventListener('click', () => this.emit('edit', {id: this._id}));
@@ -78,11 +94,9 @@ export class Item extends EventEmitter implements IViewItem {
     }
 
     /**
-     * Рендерит DOM-элемент задачи на основе переданных данных
-     * @param item — объект задачи с полями id и name
-     *
-     * Сохраняет id и текст задачи с помощью соответствующих сеттеров.
-     * Возвращает готовый HTML-элемент для вставки на страницу
+     * Отрисовывает DOM-элемент задачи на основе данных.
+     * @param item — объект с полями id и name
+     * Устанавливает id и текст задачи через сеттеры и возвращает готовый DOM-элемент.
      */
     render(item: IItem) {
         this.name = item.name;
