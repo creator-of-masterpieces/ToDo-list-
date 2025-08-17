@@ -1,7 +1,7 @@
 import {IForm, IFormConstructor} from "./Form";
 import {IToDoModel} from "../types";
 import {IPage} from "./Page";
-import {IViewItem, IViewitemConstructor} from "./Item";
+import {IViewItem, IViewItemConstructor} from "./Item";
 import {IPopup} from "./Popup";
 
 // Класс-презентер отвечает за взаимодействие модели данных и визуального интерфейса.
@@ -16,15 +16,17 @@ export class ItemPresenter {
     // Экземпляр формы редактирования задачи
     protected todoEditForm: IForm;
 
+    protected handleSubmitEditForm: (data: {value: string}) => void;
+
     constructor(
         // Интерфейс модели данных
         protected model: IToDoModel,
-        // Интерфейс конструктора формы, будет использоваться для создания новых форм
+        // Интерфейс конструктора формы. Будет использоваться для создания новых форм.
         protected formConstructor: IFormConstructor,
         // Интерфейс класса для управления отображением страницы
         protected viewPageContainer: IPage,
         // Интерфейс конструктора элемента списка дел
-        protected viewItemConstructor: IViewitemConstructor,
+        protected viewItemConstructor: IViewItemConstructor,
         // Интерфейс модального окна
         protected modal: IPopup,
     ) {
@@ -38,18 +40,18 @@ export class ItemPresenter {
      * Инициализирует формы и размещает форму добавления на странице
      *
      * 1) Создаёт экземпляр формы добавления дела (`todoForm`), задаёт:
-     *    - обработчик отправки (`handleSubmitForm`),
-     *    - текст кнопки ("Добавить"),
-     *    - плейсхолдер поля ("Следующее дело"),
+     *    - обработчик отправки (`handleSubmitForm`);
+     *    - текст кнопки ("Добавить");
+     *    - плейсхолдер поля ("Следующее дело");
      *    - и рендерит её в контейнер страницы (`viewPageContainer.formContainer`).
      * 2) Создаёт экземпляр формы редактирования дела (`todoEditForm`), задаёт:
-     *    - текст кнопки ("Изменить"),
+     *    - текст кнопки ("Изменить");
      *    - плейсхолдер ("Новое название").
      *    Форма редактирования не рендерится сразу, она показывается в модальном окне при редактировании.
+     *  При возникновении события changed, перерисовывает страницу.
      */
     init() {
         this.todoForm = new this.formConstructor(this.formTemplate);
-        this.todoForm.setHandler(this.handleSubmitForm.bind(this));
         this.todoForm.buttonText = 'Добавить';
         this.todoForm.placeholder = 'Следующее дело';
         this.viewPageContainer.formContainer = this.todoForm.render();
@@ -57,45 +59,30 @@ export class ItemPresenter {
         this.todoEditForm = new this.formConstructor(this.formTemplate);
         this.todoEditForm.buttonText = 'Изменить';
         this.todoEditForm.placeholder = 'Новое название';
+
+        this.model.on('changed', ()=> {
+            this.renderView();
+        })
+
+        this.todoForm.on('submit', this.handleSubmitForm.bind(this));
+        this.todoEditForm.on('submit', (data: {value: string}) => this.handleSubmitForm(data));
     }
 
     /**
-     * Обрабатывает отправку формы редактирования задачи
-     * @param data — новое название задачи
-     * @param id — идентификатор редактируемой задачи
+     * Обрабатывает отправку формы добавления задачи
+     * @param data — текст новой задачи
      *
-     * 1) Обновляет элемент в модели через `this.model.editItem(id, data)`.
-     * 2) Перерисовывает список задач вызовом `renderView()`.
-     * 3) Очищает поле формы редактирования (`todoEditForm.clearValue()`),
-     * 4) Закрывает модальное окно (`modal.close()`).
+     * 1) Добавляет новую задачу в модель (`this.model.addItem(data)`).
+     *    Модель сама генерирует событие `changed`, на которое презентер подписан в `init()`,
+     *    поэтому перерисовка списка происходит реактивно вне этого метода.
+     * 2) Очищает поле формы (`this.todoForm.clearValue()`), чтобы подготовить её к следующему вводу.
      *
-     * Вызывается обработчиком формы, установленным динамически в момент открытия модального окна.
+     * Примечание: метод не вызывает `renderView()` напрямую — обновление интерфейса
+     * выполняется обработчиком события `changed`, установленным в `init()`.
      */
-    handleSubmitForm(data: string) {
-        this.model.addItem(data);
-        this.renderView();
+    handleSubmitForm(data: {value: string}) {
+        this.model.addItem(data.value);
         this.todoForm.clearValue();
-    }
-
-    /**
-     * Обрабатывает отправку формы редактирования задачи
-     * @param data — новое название задачи (строка)
-     * @param id — идентификатор редактируемой задачи
-     *
-     * 1. Вызывает метод `editItem` модели (`this.model`), передавая в него `id` и новое название.
-     *    Это обновляет соответствующий объект в массиве `_items`.
-     * 2. Вызывает `renderView()`, чтобы перерисовать список задач и отобразить изменения в интерфейсе.
-     * 3. Очищает поле формы редактирования, вызывая `clearValue()` у `todoEditForm`.
-     * 4. Закрывает модальное окно с формой редактирования, вызывая `close()` у объекта `modal`.
-     *
-     * Метод используется при подтверждении изменений названия задачи
-     * в модальном окне редактирования.
-     */
-    handleSubmitEditForm(data: string, id: string) {
-        this.model.editItem(id, data);
-        this.renderView();
-        this.todoEditForm.clearValue();
-        this.modal.close();
     }
 
     /**
@@ -106,10 +93,9 @@ export class ItemPresenter {
      * 2) Создаёт новую задачу с тем же названием (`model.addItem(...)`), id генерируется автоматически.
      * 3) Перерисовывает список (`renderView()`), чтобы показать дубликат.
      */
-    handleCopyItem(item: IViewItem) {
-        const copyeditem = this.model.getItem(item.id);
-        this.model.addItem(copyeditem.name);
-        this.renderView()
+    handleCopyItem(item: {id: string}) {
+        const copyEdItem = this.model.getItem(item.id);
+        this.model.addItem(copyEdItem.name);
     }
 
     /**
@@ -121,9 +107,8 @@ export class ItemPresenter {
      *
      * Используется совместно с `setDeleteHandler` у элемента задачи.
      */
-    handleDeleteItem(item: IViewItem) {
+    handleDeleteItem(item: {id: string}) {
         this.model.removeItem(item.id);
-        this.renderView();
     }
 
     /**
@@ -138,13 +123,17 @@ export class ItemPresenter {
      *    при отправке вызовет `handleSubmitEditForm(newTitle, item.id)`.
      * 5) Открывает модальное окно (`modal.open()`).
      *
-     * Связка: setEditHandler → hendleEditItem → handleSubmitEditForm.
+     * Связка: setEditHandler → handleEditItem → handleSubmitEditForm.
      */
-    handleEditItem(item: IViewItem) {
+    handleEditItem(item: {id: string}) {
         const editItem = this.model.getItem(item.id);
         this.todoEditForm.setValue(editItem.name);
         this.modal.content = this.todoEditForm.render();
-        this.todoEditForm.setHandler((data: string) => this.handleSubmitEditForm(data, item.id));
+        this.handleSubmitEditForm = (data: {value: string})=> {
+            this.model.editItem(item.id, data.value);
+            this.todoForm.clearValue();
+            this.modal.close();
+        };
         this.modal.open();
     }
 
@@ -153,11 +142,11 @@ export class ItemPresenter {
      *
      * 1) Берёт массив задач из модели (`this.model.items`).
      * 2) Для каждой задачи:
-     *    - создаёт визуальный элемент (`IViewItem`) по шаблону `itemTemplate`,
+     *    - создаёт визуальный элемент (`IViewItem`) по шаблону `itemTemplate`;
      *    - навешивает обработчики:
-     *        • копирования (`setCopyHandler(this.handleCopyItem.bind(this))`),
-     *        • удаления   (`setDeleteHandler(this.handleDeleteItem.bind(this))`),
-     *        • редактирования (`setEditHandler(this.hendleEditItem.bind(this))`),
+     *        • копирования (`setCopyHandler(this.handleCopyItem.bind(this))`);
+     *        • удаления (`setDeleteHandler(this.handleDeleteItem.bind(this))`);
+     *        • редактирования (`setEditHandler(this.handleEditItem.bind(this))`);
      *    - рендерит DOM-узел (`render(item)`) и возвращает его.
      * 3) Инвертирует порядок элементов `.reverse()`, чтобы новые задачи были сверху.
      * 4) Передаёт массив DOM-элементов представлению (`viewPageContainer.todoContainer`),
@@ -167,11 +156,11 @@ export class ItemPresenter {
      * чтобы синхронизировать UI с состоянием модели.
      */
     renderView() {
-        const itemList = this.model.items.map((item)=> {
+        const itemList = this.model.items.map((item) => {
             const todoItem = new this.viewItemConstructor(this.itemTemplate);
-            todoItem.setCopyHandler(this.handleCopyItem.bind(this));
-            todoItem.setDeleteHandler(this.handleDeleteItem.bind(this));
-            todoItem.setEditHandler(this.handleEditItem.bind(this));
+            todoItem.on('copy', this.handleCopyItem.bind(this));
+            todoItem.on('delete', this.handleDeleteItem.bind(this));
+            todoItem.on('edit', this.handleEditItem.bind(this));
             const itemElement = todoItem.render(item);
             return itemElement;
         }).reverse();

@@ -4,10 +4,11 @@
 // - `setHandler` — принимает функцию-обработчик отправки формы
 // - `render` — возвращает DOM-элемент формы
 // - `setValue`, `getValue`, `clearValue` — управление значением поля ввода
-export interface IForm {
+import {EventEmitter, IEvents} from "./EventEmitter";
+
+export interface IForm extends IEvents {
     buttonText: string;
     placeholder: string;
-    setHandler(handleFormSubmit: Function): void;
     render(): HTMLFormElement;
     setValue(data: string): void;
     getValue(): string;
@@ -24,10 +25,9 @@ export interface IFormConstructor {
 // Класс для управления формой добавления задач.
 // Реализует интерфейс IForm.
 // Управляет DOM-элементами формы, обработкой отправки, значением поля ввода и т.д.
-export class Form implements IForm  {
+export class Form extends EventEmitter implements IForm  {
     protected formElement: HTMLFormElement;
     protected inputField: HTMLInputElement;
-    protected handleFormSubmit: Function;
     protected submitButton: HTMLButtonElement;
 
     /**
@@ -39,26 +39,20 @@ export class Form implements IForm  {
      * Устанавливает обработчик события submit.
      */
     constructor(formTemplate: HTMLTemplateElement) {
+        super();
         this.formElement = formTemplate.content
             .querySelector('.todos__form')
             .cloneNode(true) as HTMLFormElement;
 
         // Поле ввода
         this.inputField = this.formElement.querySelector('.todo-form__input');
-
         // Кнопка отправки
         this.submitButton = this.formElement.querySelector('.todo-form__submit-btn');
-
         // Устанавливаем слушатель события отправки формы
         this.formElement.addEventListener('submit', (evt) => {
             evt.preventDefault();
-            this.handleFormSubmit(this.inputField.value);
+            this.emit('submit', {value: this.inputField.value});
         })
-    }
-
-    // Устанавливает функцию-обработчик отправки формы
-    setHandler(handleFormSubmit: Function) {
-        this.handleFormSubmit = handleFormSubmit;
     }
 
     // Возвращает DOM-элемент формы

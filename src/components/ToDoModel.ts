@@ -1,23 +1,27 @@
 import {IItem, IToDoModel} from "../types";
+import {EventEmitter} from "./EventEmitter";
 
-// Класс для хранения и управления данными списка дел (ToDo)
+// Класс для хранения и управления данными списка дел (To-Do)
 // Реализует интерфейс IToDoModel
-export class ToDoModel implements IToDoModel {
+export class ToDoModel extends EventEmitter implements IToDoModel {
     // Приватное хранилище задач — массив объектов с id и name
     protected _items: IItem[];
 
     // Конструктор инициализирует пустой список задач
     constructor() {
+        super();
         this._items = [];
     }
 
     /**
      * Сеттер списка задач
      * @param data — массив объектов IItem
-     * Полностью заменяет внутренний массив задач
+     * Полностью заменяет внутренний массив задач.
+     * Генерирует событие changed.
      */
     set items(data: IItem[]) {
         this._items = data;
+        this.emit('changed');
     }
 
     /**
@@ -36,23 +40,26 @@ export class ToDoModel implements IToDoModel {
      * - Берёт все существующие id, приводит их к числу
      * - Находит максимум и увеличивает его на 1.
      * Создаёт новый объект задачи и добавляет в массив.
+     * Генерирует событие changed.
      * Возвращает добавленный объект
      */
     addItem(data: string) {
         const uniqueId: number = Math.max(...this._items.map(item => Number(item.id)),0) + 1;
         const newItem: IItem = {id:String(uniqueId), name: data};
         this._items.push(newItem);
+        this.emit('changed');
         return newItem;
     }
 
     /**
      * Удаляет задачу по id
      * @param id — строка id задачи
-     *
-     * Очищает массив от задачи с соответствующим id
+     * Очищает массив от задачи с соответствующим id.
+     * Генерирует событие changed.
      */
     removeItem(id: string) {
         this._items = this._items.filter(item => item.id !== id);
+        this.emit('changed');
     }
 
     /**
@@ -64,6 +71,7 @@ export class ToDoModel implements IToDoModel {
      * 2. Если задача найдена — обновляет её свойство `name` на новое значение.
      * 3. Если задача с таким id отсутствует, метод ничего не делает
      *    (в текущей реализации ошибки не выбрасываются).
+     * Генерирует событие changed.
      *
      * Используется при редактировании задачи в интерфейсе:
      * после вызова метод обновляет данные в модели,
@@ -72,6 +80,7 @@ export class ToDoModel implements IToDoModel {
     editItem(id: string, name: string) {
         const editedItem = this._items.find(item => item.id === id);
         editedItem.name = name;
+        this.emit('changed');
     }
 
     /**
